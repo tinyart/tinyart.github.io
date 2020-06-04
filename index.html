@@ -2,11 +2,52 @@
 <head>
     <meta charset="utf-8">
     <title>Design by Numbers</title>
+    <style>
+        html, body {
+            margin: 0;
+        }
+        article {
+            padding: 10px;
+        }
+        section {
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+        }
+        canvas {
+            display: block;
+            flex-grow: 4;
+            margin: 10px;
+            padding: 10px;
+            border: solid 1px gray;
+        }
+        form {
+            display: flex;
+            align-items: stretch;
+            margin: 10px;
+        }
+        textarea {
+            padding: 4px;
+            border: solid 1px gray;
+        }
+        #output {
+            height: 100px;
+            margin: 10px;
+            padding: 4px;
+            border: solid 1px gray;
+        }
+    </style>
 </head>
 <body>
-    <canvas id="canvas"></canvas>
-    <form>
-        <textarea id="code" rows="10"></textarea>
-    </form>
+    <article>
+        <h1>Design by Numbers</h1>
+        <section>
+            <canvas id="canvas" width="101" height="101"></canvas>
+            <form>
+                <textarea id="code" rows="10"></textarea>
+            </form>
+        </section>
+        <div id="output"></div>
+    </article>
     <script src="app.js"></script>
 </body>
