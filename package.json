@@ -1,0 +1,23 @@
+{
+  "name": "design-by-numbers",
+  "version": "0.1.0",
+  "description": "An online programming system",
+  "main": "index.js",
+  "scripts": {
+    "start": "webpack src/index.js --output app.js -d --watch",
+    "build": "pegjs src/dbn.pegjs",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "design",
+    "education",
+    "coding"
+  ],
+  "author": "Olav Schettler <olav@schettler.net>",
+  "license": "MIT",
+  "devDependencies": {
+    "pegjs": "^0.10.0",
+    "webpack": "^4.43.0",
+    "webpack-cli": "^3.3.11"
+  }
+}
