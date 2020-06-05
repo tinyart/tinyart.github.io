@@ -1,15 +1,14 @@
 {
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
+    let ctx;
     const vars = {};
 }
 
 start
     = lines:lines
     {
-        return function () {
+        return function (_ctx) {
+            ctx = _ctx;
             console.log("Run");
-            ctx.clearRect(0, 0, 100, 100);
             lines();
         }
     }
@@ -29,11 +28,14 @@ line
     / pen_command
     / line_command
     / set_command
+    / repeat_command
 
 number
     = number:[0-9]+
     {
-        return parseInt(number.join(''), 10);
+        return function () {
+            return parseInt(number.join(''), 10);
+        }
     }
     / "(" calculation:calculation ")"
     {
@@ -41,32 +43,43 @@ number
     }
     / name:name
     {
-        if (!vars.hasOwnProperty(name)) {
-            expected("Variable not defined");
+        return function () {
+            if (!vars.hasOwnProperty(name)) {
+                expected("Variable not defined");
+            }
+            console.log("Var", name);
+            return vars[name];
         }
-        console.log("Var", name, value);
-        return vars[name];
     }
 
 calculation
-    = left:additive "+" right:calculation
+    = left:additive whitespace "+" whitespace right:calculation
     {
-        return left + right; 
+        return function () {
+            return left() + right(); 
+        }
     }
-    / minuend:additive "-" subtrahend:calculation
+    / minuend:additive whitespace "-" whitespace subtrahend:calculation
     {
-        return minuend - subtrahend;
+        return function () {
+            return minuend() - subtrahend();
+        }
     }
+    / additive
     / number
 
 additive
-    = left:number "*" right:additive
+    = left:number whitespace "*" whitespace right:additive
     {
-        return left * right;
+        return function () {
+            return left() * right();
+        }
     }
-    / dividend:number "/" divisor:additive
+    / dividend:number whitespace "/" whitespace divisor:additive
     {
-        return dividend / divisor;
+        return function () {
+            return dividend() / divisor();
+        } 
     }
     / number
 
@@ -74,34 +87,34 @@ whitespace
     = [ \t]*
 
 paper_command
-    = "paper" whitespace color:color
+    = whitespace "paper" whitespace color:color
     {
         return function () {
-            console.log("Paper", color);
+            console.log("Paper", color());
 
-            ctx.fillStyle = color;
+            ctx.fillStyle = color();
             ctx.fillRect(0, 0, 100, 100);
         }
     }
 
 pen_command
-    = "pen" whitespace color:color
+    = whitespace "pen" whitespace color:color
     {
         return function () {
-            console.log("Pen", color);
+            console.log("Pen", color());
 
-            ctx.fillStyle = color;
+            ctx.strokeStyle = color();
         }
     }
 
 line_command
-    = "line" whitespace x1:coord whitespace y1:coord whitespace x2:coord whitespace y2:coord
+    = whitespace "line" whitespace x1:coord whitespace y1:coord whitespace x2:coord whitespace y2:coord
     {
         return function () {
-            console.log("Line", x1, y1, x2, y2);
+            console.log("Line", x1(), y1(), x2(), y2());
 
-            ctx.moveTo(x1, y1);
-            ctx.lineTo(x2, y2);
+            ctx.moveTo(x1(), y1());
+            ctx.lineTo(x2(), y2());
             ctx.stroke();
         }
     }
@@ -109,37 +122,60 @@ line_command
 color
     = number:number
     {
-        console.log("Color", number);
+        return function () {
+            let color = number();
+            console.log("Color", color);
 
-        let color = parseInt(number.join(''), 10);
-        if (color < 0 || color > 100) {
-            expected('Color must be between 0 and 100');
+            if (color < 0 || color > 100) {
+                expected('Color must be between 0 and 100');
+            }
+            color *= 2.55;
+            let hex = Math.round(color).toString(16);
+            if (hex.length < 2) hex = '0' + hex;
+
+            return '#' + hex.repeat(3);
         }
-        color *= 2.55;
-        let hex = Math.round(color).toString(16);
-        if (hex.length < 2) hex = '0' + hex;
-
-        return '#' + hex.repeat(3);
     }
 
 coord
     = number:number
     {
-        console.log("Coord", number);
+        return function () {
+            let coord = number();
+            console.log("Coord", coord);
 
-        if (number < 0 || number > 100) {
-            expected('Coordinate must be between 0 and 100');
+            if (coord < 0 || coord > 100) {
+                expected('Coordinate must be between 0 and 100');
+            }
+
+            return coord;
         }
-        return number;
     }
 
 set_command
-    = "set" whitespace name:name whitespace value:number
+    = whitespace "set" whitespace name:name whitespace value:number
     {
-        console.log("Set", name, value);
-        vars[name] = value;
+        return function () {
+            console.log("Set", name, value());
+            vars[name] = value();
+        }
     }
-    / "set" whitespace "[" whitespace coord whitespace coord whitespace "]" color
+    / whitespace "set" whitespace "[" whitespace coord whitespace coord whitespace "]" color
 
 name
-    = [_a-zA-Z][_a-zA-Z0-9]*
+    = name:[_a-zA-Z][_a-zA-Z0-9]*
+    {
+        console.log("Name", name);
+        return name;
+    }
+
+repeat_command
+    = whitespace "repeat" whitespace variable:name whitespace start:number whitespace end:number whitespace "{" "\n" lines:lines "\n" whitespace "}"
+    {
+        return function () {
+            console.log("Repeat var=", variable);
+            for (vars[variable] = start(); vars[variable] < end(); vars[variable]++) {
+                lines();
+            }
+        }
+    }
