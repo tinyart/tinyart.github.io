@@ -1,4 +1,4 @@
-import { parse, SyntaxError } from "./dbn";
+import { parse, SyntaxError } from "../build/dbn";
 
 const code = document.getElementById('code');
 code.innerHTML = `paper 90

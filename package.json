@@ -4,9 +4,9 @@
   "description": "An online programming system",
   "main": "index.js",
   "scripts": {
-    "start": "webpack src/index.js --output app.js -d --watch",
-    "build": "webpack src/index.js --output app.js",
-    "compile": "pegjs src/dbn.pegjs",
+    "start": "webpack src/index.js --output build/app.js -d --watch",
+    "build": "webpack src/index.js --output build/app.js --mode production",
+    "compile": "pegjs --output build/dbn.js src/dbn.pegjs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
