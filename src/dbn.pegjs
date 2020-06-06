@@ -1,7 +1,5 @@
 {
     let ctx;
-    const vars = {};
-    const cmds = {};
 }
 
 start
@@ -54,15 +52,11 @@ number
     / name:name
     {
         return function (locals) {
-            if (locals.hasOwnProperty(name)) {
-                return locals[name];
-            }
-            else
-            if (!vars.hasOwnProperty(name)) {
+            if (!locals.hasOwnProperty(name)) {
                 expected("Variable not defined");
             }
             //console.log("Var", name);
-            return vars[name];
+            return locals[name];
         }
     }
 
@@ -135,7 +129,7 @@ set_command
     {
         return function (locals) {
             //console.log("Set", name, value());
-            vars[name] = value(locals);
+            locals[name] = value(locals);
         }
     }
     / "set" whitespace "[" whitespace x:coord whitespace y:coord whitespace "]" whitespace color:color
@@ -152,7 +146,7 @@ repeat_command
     {
         return function (locals) {
             //console.log("Repeat var=", variable);
-            for (vars[variable] = start(locals); vars[variable] < end(locals); vars[variable]++) {
+            for (locals[variable] = start(locals); locals[variable] < end(locals); locals[variable]++) {
                 lines(locals);
             }
         }
@@ -162,7 +156,7 @@ command_command
     = "command" whitespace name:name args:args whitespace "{" lines:lines "}"
     {
         return function (command_locals) {
-            cmds[name] = function (invokation_locals, values) {
+            command_locals[name] = function (invokation_locals, values) {
                 const locals = { 
                     ...command_locals,
                     ...invocation_locals
@@ -181,12 +175,12 @@ invocation
     = name:name values:args whitespace "\n"
     {
         return function (locals) {
-            if (!cmds.hasOwnProperty(name)) {
+            if (!locals.hasOwnProperty(name)) {
                 expected(`Command ${name} not defined`);
             }
             console.log("Cmd", name);
 
-            return cmds[name](locals, values);
+            return locals[name](locals, values);
         }
     }
 
@@ -210,10 +204,10 @@ arg
 color
     = number:number
     {
-        return function () {
+        return function (locals) {
             let color = number();
 
-            const unchecked = '_nocheck' in vars && vars['_nocheck'] == 1;
+            const unchecked = '_nocheck' in locals && locals['_nocheck'] == 1;
             //console.log("Color " + (unchecked ? '(unchecked)' : ''), color);
 
             if (!unchecked && (color < 0 || color > 100)) {
@@ -230,12 +224,12 @@ color
 coord
     = number:number
     {
-        return function () {
+        return function (locals) {
             let coord = number();
 
-            //console.log("Checked", '_nocheck' in vars, vars['_nocheck'], vars['_nocheck'] == 1);
+            //console.log("Checked", '_nocheck' in locals, locals['_nocheck'], locals['_nocheck'] == 1);
 
-            const unchecked = '_nocheck' in vars && vars['_nocheck'] == 1;
+            const unchecked = '_nocheck' in locals && locals['_nocheck'] == 1;
             //console.log("Coord " + (unchecked ? '(checked)' : ''), coord);
 
             if (!unchecked && (coord < 0 || coord > 100)) {
