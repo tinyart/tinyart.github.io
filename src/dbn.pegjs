@@ -1,6 +1,7 @@
 {
     let ctx;
     const vars = {};
+    const cmds = {};
 }
 
 start
@@ -9,16 +10,16 @@ start
         return function (_ctx) {
             ctx = _ctx;
             //console.log("Run");
-            lines();
+            lines({});
         }
     }
 
 lines
     = whitespace line:line lines:lines whitespace
     {
-        return function () {
-            line();
-            lines();
+        return function (locals) {
+            line(locals);
+            lines(locals);
         }
     }
     / whitespace line:line
@@ -32,6 +33,8 @@ line
     / line_command
     / set_command
     / repeat_command
+    / command_command
+    / invocation
     / "//" [^\n]* "\n"
     {
         return function () {}
@@ -50,7 +53,11 @@ number
     }
     / name:name
     {
-        return function () {
+        return function (locals) {
+            if (locals.hasOwnProperty(name)) {
+                return locals[name];
+            }
+            else
             if (!vars.hasOwnProperty(name)) {
                 expected("Variable not defined");
             }
@@ -62,14 +69,14 @@ number
 calculation
     = left:additive whitespace "+" whitespace right:calculation
     {
-        return function () {
-            return left() + right(); 
+        return function (locals) {
+            return left(locals) + right(locals); 
         }
     }
     / minuend:additive whitespace "-" whitespace subtrahend:calculation
     {
-        return function () {
-            return minuend() - subtrahend();
+        return function (locals) {
+            return minuend(locals) - subtrahend(locals);
         }
     }
     / additive
@@ -78,14 +85,14 @@ calculation
 additive
     = left:number whitespace "*" whitespace right:additive
     {
-        return function () {
-            return left() * right();
+        return function (locals) {
+            return left(locals) * right(locals);
         }
     }
     / dividend:number whitespace "/" whitespace divisor:additive
     {
-        return function () {
-            return dividend() / divisor();
+        return function (locals) {
+            return dividend(locals) / divisor(locals);
         } 
     }
     / number
@@ -96,9 +103,9 @@ whitespace
 paper_command
     = "paper" whitespace color:color
     {
-        return function () {
+        return function (locals) {
             //console.log("Paper", color());
-            ctx.fillStyle = color();
+            ctx.fillStyle = color(locals);
             ctx.fillRect(0, 0, 100, 100);
         }
     }
@@ -106,19 +113,19 @@ paper_command
 pen_command
     = "pen" whitespace color:color
     {
-        return function () {
+        return function (locals) {
             //console.log("Pen", color());
-            ctx.strokeStyle = color();
+            ctx.strokeStyle = color(locals);
         }
     }
 
 line_command
     = "line" whitespace x1:coord whitespace y1:coord whitespace x2:coord whitespace y2:coord
     {
-        return function () {
+        return function (locals) {
             //console.log("Line", x1(), y1(), x2(), y2());
-            ctx.moveTo(x1(), y1());
-            ctx.lineTo(x2(), y2());
+            ctx.moveTo(x1(locals), y1(locals));
+            ctx.lineTo(x2(locals), y2(locals));
             ctx.stroke();
         }
     }
@@ -126,29 +133,78 @@ line_command
 set_command
     = "set" whitespace name:name whitespace value:number
     {
-        return function () {
+        return function (locals) {
             //console.log("Set", name, value());
-            vars[name] = value();
+            vars[name] = value(locals);
         }
     }
     / "set" whitespace "[" whitespace x:coord whitespace y:coord whitespace "]" whitespace color:color
     {
-        return function () {
+        return function (locals) {
             //console.log("Dot", x(), y(), color());
-            ctx.fillStyle = color();
-            ctx.fillRect(x(), y(), 1, 1);
+            ctx.fillStyle = color(locals);
+            ctx.fillRect(x(locals), y(locals), 1, 1);
         }
     }
 
 repeat_command
     = "repeat" whitespace variable:name whitespace start:number whitespace end:number whitespace "{" lines:lines "}"
     {
-        return function () {
+        return function (locals) {
             //console.log("Repeat var=", variable);
-            for (vars[variable] = start(); vars[variable] < end(); vars[variable]++) {
-                lines();
+            for (vars[variable] = start(locals); vars[variable] < end(locals); vars[variable]++) {
+                lines(locals);
             }
         }
+    }
+
+command_command
+    = "command" whitespace name:name args:args whitespace "{" lines:lines "}"
+    {
+        return function (command_locals) {
+            cmds[name] = function (invokation_locals, values) {
+                const locals = { 
+                    ...command_locals,
+                    ...invocation_locals
+                };
+
+                // Merge in actual parameters
+                args.forEach(function (arg, i) {
+                    locals[arg] = values[i];
+                });
+                lines(locals);
+            }
+        }
+    }
+
+invocation
+    = name:name values:args whitespace "\n"
+    {
+        return function (locals) {
+            if (!cmds.hasOwnProperty(name)) {
+                expected(`Command ${name} not defined`);
+            }
+            console.log("Cmd", name);
+
+            return cmds[name](locals, values);
+        }
+    }
+
+args
+    = arg:arg args:args
+    {
+        args.unshift(arg);
+        return args;
+    }
+    / arg
+    {
+        return [ arg ];
+    }
+
+arg
+    = whitespace name:name
+    {
+        return name;
     }
 
 color
