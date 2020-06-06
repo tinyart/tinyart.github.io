@@ -17,3 +17,7 @@ npm start
 ````
 
 Them, open index.html in a browser and enter a DBN program into the text area.
+
+## Status
+
+This is not yet complete, work in progress. Pull requests are very wellcome.
