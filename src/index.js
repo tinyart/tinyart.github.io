@@ -2,7 +2,8 @@ import { parse, SyntaxError } from "../build/dbn";
 
 const code = document.getElementById('code');
 code.innerHTML = `paper 90
-repeat i 1 5 {
+repeat i 1 5
+{
   pen (i*10)
   line (i*20) 0 0 (i*20)
 }`;
