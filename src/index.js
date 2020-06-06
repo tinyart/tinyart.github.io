@@ -1,12 +1,7 @@
 import { parse, SyntaxError } from "../build/dbn";
 
 const code = document.getElementById('code');
-code.innerHTML = `paper 90
-repeat i 1 5
-{
-  pen (i*10)
-  line (i*20) 0 0 (i*20)
-}`;
+code.innerHTML = 'paper 50';
 
 const output = document.getElementById('output');
 
@@ -50,6 +45,19 @@ function run() {
     }
 }
 
+function hashchange() {
+    const url = 'https://cors-anywhere.herokuapp.com/' + location.hash.substr(1); 
+    console.log("Hash:", url);
+    fetch(url)
+        .then(response => response.blob())
+        .then(data => {
+            console.log(data);
+            const program = parse(data);
+            program(ctx);
+        });
+}
+
 code.addEventListener('keyup', run);
+window.addEventListener('hashchange', hashchange, false);
 
 run();
