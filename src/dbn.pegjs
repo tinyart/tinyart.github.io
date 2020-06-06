@@ -21,7 +21,10 @@ lines
             lines();
         }
     }
-    / whitespace line
+    / whitespace line:line
+    {
+        return line;
+    }
 
 line
     = paper_command
@@ -130,7 +133,7 @@ set_command
     / "set" whitespace "[" whitespace coord whitespace coord whitespace "]" color
 
 repeat_command
-    = "repeat" whitespace variable:name whitespace start:number whitespace end:number "\n" whitespace "{" "\n" whitespace lines:lines "\n" whitespace "}"
+    = "repeat" whitespace variable:name whitespace start:number whitespace end:number whitespace "{" lines:lines "}"
     {
         return function () {
             console.log("Repeat var=", variable);
