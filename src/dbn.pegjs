@@ -14,14 +14,14 @@ start
     }
 
 lines
-    = line:line "\n" lines:lines
+    = whitespace line:line lines:lines whitespace
     {
         return function () {
             line();
             lines();
         }
     }
-    / line
+    / whitespace line
 
 line
     = paper_command
@@ -84,10 +84,10 @@ additive
     / number
 
 whitespace
-    = [ \t]*
+    = [ \t\n]*
 
 paper_command
-    = whitespace "paper" whitespace color:color
+    = "paper" whitespace color:color
     {
         return function () {
             console.log("Paper", color());
@@ -98,7 +98,7 @@ paper_command
     }
 
 pen_command
-    = whitespace "pen" whitespace color:color
+    = "pen" whitespace color:color
     {
         return function () {
             console.log("Pen", color());
@@ -108,7 +108,7 @@ pen_command
     }
 
 line_command
-    = whitespace "line" whitespace x1:coord whitespace y1:coord whitespace x2:coord whitespace y2:coord
+    = "line" whitespace x1:coord whitespace y1:coord whitespace x2:coord whitespace y2:coord
     {
         return function () {
             console.log("Line", x1(), y1(), x2(), y2());
@@ -116,6 +116,27 @@ line_command
             ctx.moveTo(x1(), y1());
             ctx.lineTo(x2(), y2());
             ctx.stroke();
+        }
+    }
+
+set_command
+    = "set" whitespace name:name whitespace value:number
+    {
+        return function () {
+            console.log("Set", name, value());
+            vars[name] = value();
+        }
+    }
+    / "set" whitespace "[" whitespace coord whitespace coord whitespace "]" color
+
+repeat_command
+    = "repeat" whitespace variable:name whitespace start:number whitespace end:number "\n" whitespace "{" "\n" whitespace lines:lines "\n" whitespace "}"
+    {
+        return function () {
+            console.log("Repeat var=", variable);
+            for (vars[variable] = start(); vars[variable] < end(); vars[variable]++) {
+                lines();
+            }
         }
     }
 
@@ -152,16 +173,6 @@ coord
         }
     }
 
-set_command
-    = whitespace "set" whitespace name:name whitespace value:number
-    {
-        return function () {
-            console.log("Set", name, value());
-            vars[name] = value();
-        }
-    }
-    / whitespace "set" whitespace "[" whitespace coord whitespace coord whitespace "]" color
-
 name
     = name:[_a-zA-Z][_a-zA-Z0-9]*
     {
@@ -169,13 +180,3 @@ name
         return name;
     }
 
-repeat_command
-    = whitespace "repeat" whitespace variable:name whitespace start:number whitespace end:number "\n" whitespace "{" "\n" whitespace lines:lines "\n" whitespace "}"
-    {
-        return function () {
-            console.log("Repeat var=", variable);
-            for (vars[variable] = start(); vars[variable] < end(); vars[variable]++) {
-                lines();
-            }
-        }
-    }
