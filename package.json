@@ -7,7 +7,8 @@
     "start": "webpack src/index.js --output build/app.js -d --watch",
     "build": "webpack src/index.js --output build/app.js --mode production",
     "compile": "pegjs --output build/dbn.js src/dbn.pegjs",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "serve": "serve"
   },
   "keywords": [
     "design",
@@ -18,6 +19,7 @@
   "license": "MIT",
   "devDependencies": {
     "pegjs": "^0.10.0",
+    "serve": "^11.3.2",
     "webpack": "^4.43.0",
     "webpack-cli": "^3.3.11"
   }
