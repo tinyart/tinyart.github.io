@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "webpack src/index.js --output app.js -d --watch",
-    "build": "pegjs src/dbn.pegjs",
+    "build": "webpack src/index.js --output app.js",
+    "compile": "pegjs src/dbn.pegjs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
