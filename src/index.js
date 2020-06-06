@@ -46,15 +46,28 @@ function run() {
 }
 
 function hashchange() {
-    const url = 'https://cors-anywhere.herokuapp.com/' + location.hash.substr(1); 
-    console.log("Hash:", url);
-    fetch(url)
-        .then(response => response.blob())
-        .then(data => {
-            console.log(data);
-            const program = parse(data);
-            program(ctx);
-        });
+    const url = location.hash.substr(1);
+    if (url.length == 0) {
+        console.log("Clear");
+        code.value = '';
+        run();
+    }
+    else
+    if (url.startsWith('https:')) {
+        console.log("Fetch:", url);
+        fetch('https://cors-anywhere.herokuapp.com/' + url)
+            .then(response => response.text())
+            .then(data => {
+                console.log("Code:", data);
+                code.value = data;
+                run();
+            });
+    }
+    else {
+        console.log("Code:", url);
+        code.value = decodeURI(url);
+        run();
+    }
 }
 
 code.addEventListener('keyup', run);
