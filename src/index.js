@@ -1,11 +1,11 @@
 import { parse, SyntaxError } from "./dbn";
 
 const code = document.getElementById('code');
-code.innerHTML = `paper 100
-pen 10
-line 0 0 100 100
-pen 10
-line 100 0 1 100`;
+code.innerHTML = `paper 90
+repeat i 1 5 {
+  pen (i*10)
+  line (i*20) 0 0 (i*20)
+}`;
 
 const output = document.getElementById('output');
 

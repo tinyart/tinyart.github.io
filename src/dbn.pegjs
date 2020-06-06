@@ -170,7 +170,7 @@ name
     }
 
 repeat_command
-    = whitespace "repeat" whitespace variable:name whitespace start:number whitespace end:number whitespace "{" "\n" lines:lines "\n" whitespace "}"
+    = whitespace "repeat" whitespace variable:name whitespace start:number whitespace end:number "\n" whitespace "{" "\n" whitespace lines:lines "\n" whitespace "}"
     {
         return function () {
             console.log("Repeat var=", variable);
