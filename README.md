@@ -1,6 +1,6 @@
 # Design by Numbers
 
-![doc/example-01.png]
+![Example](doc/example-01.png)
 
 An online programming system inspired by the original [DBN project](https://dbn.media.mit.edu/) by the Aesthetics and Computation Group at the MIT Media Laboratory. 
 
