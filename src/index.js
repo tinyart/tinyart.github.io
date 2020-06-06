@@ -41,7 +41,7 @@ function run() {
         program(ctx);
     }
     catch (e) {
-        output.innerHTML = e;
+        output.innerHTML = `${e.location.end.line}:${e.location.end.column}: ${e.message}`;
     }
 }
 
