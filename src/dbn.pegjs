@@ -13,16 +13,14 @@ start
     }
 
 lines
-    = _ line:line lines:lines
+    = lines:(_ line)*
     {
+        //console.log("Lines:", lines);
         return function (locals) {
-            line(locals);
-            lines(locals);
+            for (let line of lines) {
+                line[1](locals);
+            }
         }
-    }
-    / _ line:line
-    {
-        return line;
     }
 
 line
@@ -36,6 +34,7 @@ line
     / command_invocation
     / forever_command
     / stop_command
+    / value_command
 
 number
     = number:[0-9]+
@@ -56,6 +55,17 @@ number
             }
             //console.log("Var", name);
             return locals[name];
+        }
+    }
+    / "<" _ name:name values:values ">"
+    {
+        return function (locals) {
+            if (!locals.hasOwnProperty(name)) {
+                expected(`Command ${name} not defined`);
+            }
+            console.log("Cmd as value", name);
+
+            return locals[name](locals, values);
         }
     }
 
@@ -158,7 +168,7 @@ repeat_command
     }
 
 command_command
-    = "command" _ name:name args:args _ "{" lines:lines _ "}"
+    = ("command" / "number") _ name:name args:args _ "{" lines:lines _ "}"
     {
         return function (command_locals) {
             command_locals[name] = function (invocation_locals, values) {
@@ -172,7 +182,7 @@ command_command
                     locals[arg] = values[i](locals);
                 });
                 console.log(locals);
-                lines(locals);
+                return lines(locals);
             }
         }
     }
@@ -222,19 +232,21 @@ stop_command
         }
     }
 
-args
-    = arg:arg args:args
+value_command
+    = "value" number:number
     {
-        args.unshift(arg);
-        return args;
+        return number;
     }
-    / arg:arg
+
+args
+    = args:(arg)*
     {
-        return [ arg ];
+        console.log("Args", args);
+        return args;
     }
 
 arg
-    = __ name:name
+    = _ name:name
     {
         return name;
     }
