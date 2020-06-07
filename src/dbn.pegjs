@@ -24,21 +24,48 @@ start
                     default:
                         expected(`Mouse needs 1, 2 or 3, got ${select}`);
                 }
-            }
+            };
+
+            locals.time = function (locals, values) {
+                if (values.length != 1) {
+                    expected("Time needs 1, 2, 3 or 4");
+                }
+                const select = values[0](locals);
+                const now = new Date();
+                switch (select) {
+                    case 1:
+                        return now.getHours();
+                    case 2:
+                        return now.getMinutes();
+                    case 3:
+                        return now.getSeconds();
+                    case 4:
+                        return now.getMilliseconds();
+                    default:
+                        expected(`Time needs 1, 2, 3 or 4, got ${select}`);
+                }
+            };
 
             lines(locals);
         }
     }
 
 lines
-    = lines:(_ line)*
+    = lines:indented_line*
     {
-        //console.log("Lines:", lines);
         return function (locals) {
+            let result = null;
             for (let line of lines) {
-                line[1](locals);
+                result = line(locals);
             }
+            return result;
         }
+    }
+
+indented_line
+    = _ line:line
+    { 
+        return line;
     }
 
 line
@@ -49,17 +76,21 @@ line
     / repeat_command
     / command_command
     / log_command
-    / command_invocation
+    / predicate_command
     / forever_command
     / stop_command
     / value_command
-    / predicate_command
+    / command_invocation
 
 number
-    = number:[0-9]+
+    = sign:"-"? number:[0-9]+
     {
         return function () {
-            return parseInt(number.join(''), 10);
+            let n = parseInt(number.join(''), 10);
+            if (sign == "-") {
+                n *= -1;
+            }
+            return n;
         }
     }
     / "(" calculation:calculation ")"
@@ -85,6 +116,14 @@ number
             console.log("Cmd as value", name);
 
             return locals[name](locals, values);
+        }
+    }
+    / "[" _ x:number __ y:number _ "]"
+    {
+        return function (locals) {
+            const _x = x(locals);
+            const _y = y(locals);
+            return state.getdot(_x, _y);
         }
     }
 
@@ -135,26 +174,25 @@ comment
     = [ \t\n]* "//" [^\n]*
 
 paper_command
-    = "paper" _ color:color
+    = "paper" __ color:color
     {
         return function (locals) {
-
             const _color = color(locals);
-            state.paper(color);
+            state.paper(_color);
         }
     }
 
 pen_command
-    = "pen" _ color:color
+    = "pen" __ color:color
     {
         return function (locals) {
             const _color = color(locals);
-            state.pen(color);
+            state.pen(_color);
         }
     }
 
 line_command
-    = "line" _ x1:coord _ y1:coord _ x2:coord _ y2:coord
+    = "line" __ x1:coord _ y1:coord _ x2:coord _ y2:coord
     {
         return function (locals) {
             const _x1 = x1(locals);
@@ -166,14 +204,14 @@ line_command
     }
 
 set_command
-    = "set" _ name:name _ value:number
+    = "set" __ name:name _ value:number
     {
         return function (locals) {
             //console.log("Set", name, value());
             locals[name] = value(locals);
         }
     }
-    / "set" _ "[" _ x:coord _ y:coord _ "]" _ color:color
+    / "set" __ "[" _ x:coord _ y:coord _ "]" _ color:color
     {
         return function (locals) {
             const _x = x(locals);
@@ -184,7 +222,7 @@ set_command
     }
 
 repeat_command
-    = "repeat" _ variable:name _ start:number _ end:number _ "{" lines:lines _ "}"
+    = "repeat" __ variable:name _ start:number _ end:number _ "{" lines:lines _ "}"
     {
         return function (locals) {
             //console.log("Repeat var=", variable);
@@ -195,7 +233,7 @@ repeat_command
     }
 
 command_command
-    = ("command" / "number") _ name:name args:args _ "{" lines:lines _ "}"
+    = ("command" / "number") __ name:name args:args _ "{" lines:lines _ "}"
     {
         return function (command_locals) {
             command_locals[name] = function (invocation_locals, values) {
@@ -208,7 +246,7 @@ command_command
                 args.forEach(function (arg, i) {
                     locals[arg] = values[i](locals);
                 });
-                console.log(locals);
+                console.log("Invoke", locals, lines);
                 return lines(locals);
             }
         }
@@ -228,7 +266,7 @@ command_invocation
     }
 
 log_command
-    = "log" _ number:number
+    = "log" __ number:number
     {
         return function (locals) {
             console.log("Log", number(locals));
@@ -260,29 +298,32 @@ stop_command
     }
 
 value_command
-    = "value" number:number
+    = "value" __ number:number
     {
-        return number;
+        return function (locals) {
+            console.log("Value", number(locals));
+            return number(locals);
+        }; 
     }
 
 predicate_command
-    = type:( "smaller" / "notsmaller" / "same" / "notsame" ) "?" _ n1:number _ n2:number _ "{" lines:lines _ "}"
+    = type:( "smaller?" / "notsmaller?" / "same?" / "notsame?" ) _ n1:number _ n2:number _ "{" lines:lines _ "}"
     {
         return function (locals) {
             //console.log("Predicate?", type, n1(locals), n2(locals));
 
             let check, _n1 = n1(locals), _n2 = n2(locals);
             switch (type) {
-                case "smaller":
+                case "smaller?":
                     check = _n1 < _n2;
                     break;
-                case "notsmaller":
+                case "notsmaller?":
                     check = _n1 >= _n2;
                     break;
-                case "same":
+                case "same?":
                     check = _n1 == _n2;
                     break;
-                case "notsame":
+                case "notsame?":
                     check = _n1 != _n2;
                     break;
             }
