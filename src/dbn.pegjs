@@ -3,7 +3,7 @@
 }
 
 start
-    = lines:lines
+    = lines:lines _
     {
         return function (_ctx) {
             ctx = _ctx;
@@ -13,14 +13,14 @@ start
     }
 
 lines
-    = whitespace line:line lines:lines whitespace
+    = _ line:line lines:lines
     {
         return function (locals) {
             line(locals);
             lines(locals);
         }
     }
-    / whitespace line:line
+    / _ line:line
     {
         return line;
     }
@@ -32,11 +32,8 @@ line
     / set_command
     / repeat_command
     / command_command
+    / log_command
     / invocation
-    / "//" [^\n]* "\n"
-    {
-        return function () {}
-    }
 
 number
     = number:[0-9]+
@@ -53,7 +50,7 @@ number
     {
         return function (locals) {
             if (!locals.hasOwnProperty(name)) {
-                expected("Variable not defined");
+                expected(`Variable ${name} not defined`);
             }
             //console.log("Var", name);
             return locals[name];
@@ -61,13 +58,13 @@ number
     }
 
 calculation
-    = left:additive whitespace "+" whitespace right:calculation
+    = left:additive _ "+" _ right:calculation
     {
         return function (locals) {
             return left(locals) + right(locals); 
         }
     }
-    / minuend:additive whitespace "-" whitespace subtrahend:calculation
+    / minuend:additive _ "-" _ subtrahend:calculation
     {
         return function (locals) {
             return minuend(locals) - subtrahend(locals);
@@ -77,13 +74,13 @@ calculation
     / number
 
 additive
-    = left:number whitespace "*" whitespace right:additive
+    = left:number _ "*" _ right:additive
     {
         return function (locals) {
             return left(locals) * right(locals);
         }
     }
-    / dividend:number whitespace "/" whitespace divisor:additive
+    / dividend:number _ "/" _ divisor:additive
     {
         return function (locals) {
             return dividend(locals) / divisor(locals);
@@ -91,11 +88,17 @@ additive
     }
     / number
 
-whitespace
-    = [ \t\n]*
+_
+    = comment* [ \t\n]*
+
+__
+    = comment* [ \t\n]+
+
+comment
+    = [ \t\n]* "//" [^\n]*
 
 paper_command
-    = "paper" whitespace color:color
+    = "paper" _ color:color
     {
         return function (locals) {
             //console.log("Paper", color());
@@ -105,7 +108,7 @@ paper_command
     }
 
 pen_command
-    = "pen" whitespace color:color
+    = "pen" _ color:color
     {
         return function (locals) {
             //console.log("Pen", color());
@@ -114,7 +117,7 @@ pen_command
     }
 
 line_command
-    = "line" whitespace x1:coord whitespace y1:coord whitespace x2:coord whitespace y2:coord
+    = "line" _ x1:coord _ y1:coord _ x2:coord _ y2:coord
     {
         return function (locals) {
             //console.log("Line", x1(), y1(), x2(), y2());
@@ -125,14 +128,14 @@ line_command
     }
 
 set_command
-    = "set" whitespace name:name whitespace value:number
+    = "set" _ name:name _ value:number
     {
         return function (locals) {
             //console.log("Set", name, value());
             locals[name] = value(locals);
         }
     }
-    / "set" whitespace "[" whitespace x:coord whitespace y:coord whitespace "]" whitespace color:color
+    / "set" _ "[" _ x:coord _ y:coord _ "]" _ color:color
     {
         return function (locals) {
             //console.log("Dot", x(), y(), color());
@@ -142,7 +145,7 @@ set_command
     }
 
 repeat_command
-    = "repeat" whitespace variable:name whitespace start:number whitespace end:number whitespace "{" lines:lines "}"
+    = "repeat" _ variable:name _ start:number _ end:number _ "{" lines:lines _ "}"
     {
         return function (locals) {
             //console.log("Repeat var=", variable);
@@ -153,10 +156,10 @@ repeat_command
     }
 
 command_command
-    = "command" whitespace name:name args:args whitespace "{" lines:lines "}"
+    = "command" _ name:name args:args _ "{" lines:lines _ "}"
     {
         return function (command_locals) {
-            command_locals[name] = function (invokation_locals, values) {
+            command_locals[name] = function (invocation_locals, values) {
                 const locals = { 
                     ...command_locals,
                     ...invocation_locals
@@ -164,15 +167,16 @@ command_command
 
                 // Merge in actual parameters
                 args.forEach(function (arg, i) {
-                    locals[arg] = values[i];
+                    locals[arg] = values[i](locals);
                 });
+                console.log(locals);
                 lines(locals);
             }
         }
     }
 
 invocation
-    = name:name values:args whitespace "\n"
+    = name:name values:values "\n"
     {
         return function (locals) {
             if (!locals.hasOwnProperty(name)) {
@@ -184,34 +188,59 @@ invocation
         }
     }
 
+log_command
+    = "log" _ number:number
+    {
+        return function (locals) {
+            console.log("Log", number(locals));
+        }
+    }
+
 args
     = arg:arg args:args
     {
         args.unshift(arg);
         return args;
     }
-    / arg
+    / arg:arg
     {
         return [ arg ];
     }
 
 arg
-    = whitespace name:name
+    = __ name:name
     {
         return name;
+    }
+
+values
+    = value:value values:values
+    {
+        values.unshift(value);
+        return values;
+    }
+    / value:value
+    {
+        return [ value ];
+    }
+
+value
+    = __ number:number
+    {
+        return number;
     }
 
 color
     = number:number
     {
         return function (locals) {
-            let color = number();
+            let color = number(locals);
 
             const unchecked = '_nocheck' in locals && locals['_nocheck'] == 1;
             //console.log("Color " + (unchecked ? '(unchecked)' : ''), color);
 
             if (!unchecked && (color < 0 || color > 100)) {
-                expected('Color must be between 0 and 100');
+                expected('Color must be between 0 and 100, got ${color}');
             }
             color *= 2.55;
             let hex = Math.round(color).toString(16);
@@ -225,7 +254,7 @@ coord
     = number:number
     {
         return function (locals) {
-            let coord = number();
+            let coord = number(locals);
 
             //console.log("Checked", '_nocheck' in locals, locals['_nocheck'], locals['_nocheck'] == 1);
 

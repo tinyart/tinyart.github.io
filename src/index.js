@@ -32,7 +32,7 @@ function setup() {
 }
 
 function run() {
-    console.log("Code:", code.value);
+    //console.log("Code:", code.value);
     setup();
 
     try {
@@ -41,7 +41,12 @@ function run() {
         program(ctx);
     }
     catch (e) {
-        output.innerHTML = `${e.location.end.line}:${e.location.end.column}: ${e.message}`;
+        if (e.name == 'SyntaxError') {
+            output.innerHTML = `${e.location.end.line}:${e.location.end.column}: ${e.message}`;
+        }
+        else {
+            output.innerHTML = e;
+        }
     }
 }
 
