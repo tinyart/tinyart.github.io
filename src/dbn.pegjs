@@ -138,9 +138,9 @@ paper_command
     = "paper" _ color:color
     {
         return function (locals) {
-            //console.log("Paper", color());
-            state.ctx.fillStyle = color(locals);
-            state.ctx.fillRect(0, 0, 100, 100);
+
+            const _color = color(locals);
+            state.paper(color);
         }
     }
 
@@ -148,8 +148,8 @@ pen_command
     = "pen" _ color:color
     {
         return function (locals) {
-            //console.log("Pen", color());
-            state.ctx.strokeStyle = color(locals);
+            const _color = color(locals);
+            state.pen(color);
         }
     }
 
@@ -157,10 +157,11 @@ line_command
     = "line" _ x1:coord _ y1:coord _ x2:coord _ y2:coord
     {
         return function (locals) {
-            //console.log("Line", x1(), y1(), x2(), y2());
-            state.ctx.moveTo(x1(locals), y1(locals));
-            state.ctx.lineTo(x2(locals), y2(locals));
-            state.ctx.stroke();
+            const _x1 = x1(locals);
+            const _y1 = y1(locals);
+            const _x2 = x2(locals);
+            const _y2 = y2(locals);
+            state.line(_x1, _y1, _x2, _y2);
         }
     }
 
@@ -175,9 +176,10 @@ set_command
     / "set" _ "[" _ x:coord _ y:coord _ "]" _ color:color
     {
         return function (locals) {
-            //console.log("Dot", x(), y(), color());
-            state.ctx.fillStyle = color(locals);
-            state.ctx.fillRect(x(locals), y(locals), 1, 1);
+            const _x = x(locals);
+            const _y = y(locals);
+            const _color = color(locals);
+            state.dot(_x, _y, _color);
         }
     }
 

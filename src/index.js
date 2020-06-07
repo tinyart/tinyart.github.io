@@ -11,7 +11,27 @@ let state = {
     ctx: canvas.getContext('2d'),
     timer: null,
     mousex: 0,
-    mousey: 0
+    mousey: 0,
+    paper: function (color) {
+        //console.log("Paper", color());
+        state.ctx.fillStyle = color(locals);
+        state.ctx.fillRect(0, 0, 100, 100);
+    },
+    pen: function (color) {
+        //console.log("Pen", color());
+        state.ctx.strokeStyle = color;
+    },
+    line: function (x1, y1, x2, y2) {
+        //console.log("Line", x1(), y1(), x2(), y2());
+        state.ctx.moveTo(x1, y1);
+        state.ctx.lineTo(x2, y2);
+        state.ctx.stroke();
+    },
+    dot: function (x, y, color) {
+        //console.log("Dot", x(), y(), color());
+        state.ctx.fillStyle = color;
+        state.ctx.fillRect(x, y, 1, 1);
+    }
 };
 
 function setup() {
