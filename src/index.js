@@ -9,7 +9,9 @@ const canvas = document.getElementById('canvas');
 
 let state = {
     ctx: canvas.getContext('2d'),
-    timer: null
+    timer: null,
+    mousex: 0,
+    mousey: 0
 };
 
 function setup() {
@@ -87,5 +89,13 @@ function hashchange() {
 
 code.addEventListener('keyup', run);
 window.addEventListener('hashchange', hashchange, false);
+canvas.addEventListener('mousemove', function (e) {
+    const rect = canvas.getBoundingClientRect();
+    const scalex = 100 / (rect.right - rect.left);
+    const scaley = 100/ (rect.bottom - rect.top);
+    state.mousex = Math.round((e.clientX - rect.left) * scalex);
+    state.mousey = Math.round((e.clientY - rect.top) * scaley);
+    //console.log("Mousemove", state.mousex, state.mousey);
+}, false);
 
 run();

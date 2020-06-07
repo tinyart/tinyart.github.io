@@ -8,7 +8,25 @@ start
         return function (_state) {
             //console.log("Run");
             state = _state;
-            lines({});
+
+            const locals = {};
+
+            locals.mouse = function (locals, values) {
+                if (values.length != 1) {
+                    expected("Mouse needs 1, 2 or 3");
+                }
+                const select = values[0](locals);
+                switch (select) {
+                    case 1:
+                        return state.mousex;
+                    case 2:
+                        return state.mousey;
+                    default:
+                        expected(`Mouse needs 1, 2 or 3, got ${select}`);
+                }
+            }
+
+            lines(locals);
         }
     }
 
@@ -35,6 +53,7 @@ line
     / forever_command
     / stop_command
     / value_command
+    / predicate_command
 
 number
     = number:[0-9]+
@@ -96,6 +115,12 @@ additive
     {
         return function (locals) {
             return dividend(locals) / divisor(locals);
+        } 
+    }
+    / dividend:number _ "%" _ divisor:additive
+    {
+        return function (locals) {
+            return dividend(locals) % divisor(locals);
         } 
     }
     / number
@@ -213,7 +238,7 @@ forever_command
     {
         return function (locals) {
             console.log("Forever");
-            state.timer = setInterval(function () { lines(locals); }, 1000);
+            state.timer = setInterval(function () { lines(locals); }, 100);
         }
     }
 
@@ -238,10 +263,38 @@ value_command
         return number;
     }
 
+predicate_command
+    = type:( "smaller" / "notsmaller" / "same" / "notsame" ) "?" _ n1:number _ n2:number _ "{" lines:lines _ "}"
+    {
+        return function (locals) {
+            //console.log("Predicate?", type, n1(locals), n2(locals));
+
+            let check, _n1 = n1(locals), _n2 = n2(locals);
+            switch (type) {
+                case "smaller":
+                    check = _n1 < _n2;
+                    break;
+                case "notsmaller":
+                    check = _n1 >= _n2;
+                    break;
+                case "same":
+                    check = _n1 == _n2;
+                    break;
+                case "notsame":
+                    check = _n1 != _n2;
+                    break;
+            }
+
+            if (check) {
+                lines(locals);
+            }
+       }
+    }
+
 args
     = args:(arg)*
     {
-        console.log("Args", args);
+        //console.log("Args", args);
         return args;
     }
 
@@ -252,15 +305,7 @@ arg
     }
 
 values
-    = value:value values:values
-    {
-        values.unshift(value);
-        return values;
-    }
-    / value:value
-    {
-        return [ value ];
-    }
+    = (value)*
 
 value
     = __ number:number
