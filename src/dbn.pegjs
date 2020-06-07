@@ -1,13 +1,13 @@
 {
-    let ctx;
+    let state;
 }
 
 start
     = lines:lines _
     {
-        return function (_ctx) {
-            ctx = _ctx;
+        return function (_state) {
             //console.log("Run");
+            state = _state;
             lines({});
         }
     }
@@ -33,7 +33,9 @@ line
     / repeat_command
     / command_command
     / log_command
-    / invocation
+    / command_invocation
+    / forever_command
+    / stop_command
 
 number
     = number:[0-9]+
@@ -102,8 +104,8 @@ paper_command
     {
         return function (locals) {
             //console.log("Paper", color());
-            ctx.fillStyle = color(locals);
-            ctx.fillRect(0, 0, 100, 100);
+            state.ctx.fillStyle = color(locals);
+            state.ctx.fillRect(0, 0, 100, 100);
         }
     }
 
@@ -112,7 +114,7 @@ pen_command
     {
         return function (locals) {
             //console.log("Pen", color());
-            ctx.strokeStyle = color(locals);
+            state.ctx.strokeStyle = color(locals);
         }
     }
 
@@ -121,9 +123,9 @@ line_command
     {
         return function (locals) {
             //console.log("Line", x1(), y1(), x2(), y2());
-            ctx.moveTo(x1(locals), y1(locals));
-            ctx.lineTo(x2(locals), y2(locals));
-            ctx.stroke();
+            state.ctx.moveTo(x1(locals), y1(locals));
+            state.ctx.lineTo(x2(locals), y2(locals));
+            state.ctx.stroke();
         }
     }
 
@@ -139,8 +141,8 @@ set_command
     {
         return function (locals) {
             //console.log("Dot", x(), y(), color());
-            ctx.fillStyle = color(locals);
-            ctx.fillRect(x(locals), y(locals), 1, 1);
+            state.ctx.fillStyle = color(locals);
+            state.ctx.fillRect(x(locals), y(locals), 1, 1);
         }
     }
 
@@ -175,7 +177,7 @@ command_command
         }
     }
 
-invocation
+command_invocation
     = name:name values:values "\n"
     {
         return function (locals) {
@@ -193,6 +195,30 @@ log_command
     {
         return function (locals) {
             console.log("Log", number(locals));
+        }
+    }
+
+forever_command
+    = "forever" _ "{" lines:lines _ "}"
+    {
+        return function (locals) {
+            console.log("Forever");
+            state.timer = setInterval(function () { lines(locals); }, 1000);
+        }
+    }
+
+stop_command
+    = "stop"
+    {
+        return function (locals) {
+            console.log("Stop");
+            if (state.timer) {
+                clearInterval(state.timer);
+                state.timer = null;
+            }
+            else {
+                expected("Not in a forever loop");
+            }
         }
     }
 

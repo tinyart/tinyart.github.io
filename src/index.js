@@ -6,10 +6,20 @@ code.innerHTML = 'paper 50';
 const output = document.getElementById('output');
 
 const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
+
+let state = {
+    ctx: canvas.getContext('2d'),
+    timer: null
+};
 
 function setup() {
-    ctx.clearRect(0, 0, 100, 100);
+    if (state.timer) {
+        console.log("Stopped");
+        clearInterval(state.timer);
+        state.timer = null;
+    }
+
+    state.ctx.clearRect(0, 0, 100, 100);
 /*
     ctx.font = "8px Arial";
     ctx.strokeStyle = "#DDD";
@@ -38,7 +48,7 @@ function run() {
     try {
         output.innerHTML = '';
         const program = parse(code.value);
-        program(ctx);
+        program(state);
     }
     catch (e) {
         if (e.name == 'SyntaxError') {
